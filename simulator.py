@@ -17,7 +17,7 @@ class Simulator:
     n_samples: int
     n_features: int
     rho: float
-    sigma_e: float
+    sigma_u: float
 
     def generate_simulation_data(
         self,
@@ -25,7 +25,7 @@ class Simulator:
         n_samples: int,
         n_features: int,
         rho: float,
-        sigma_e: float,
+        sigma_u: float,
     ) -> tuple(np.ndarray, np.ndarray):
         """シミュレーションデータの生成"""
 
@@ -37,10 +37,10 @@ class Simulator:
 
         # 特徴量とノイズを生成
         X = np.random.multivariate_normal(mean, cov, size=(n_simulations, n_samples))
-        e = np.random.normal(0, sigma_e, size=(n_simulations, n_samples))
+        u = np.random.normal(0, sigma_u, size=(n_simulations, n_samples))
 
         # 係数はすべて1なので、単に和をとる
-        y = X.sum(axis=2) + e
+        y = X.sum(axis=2) + u
 
         return (X, y)
 
@@ -67,18 +67,18 @@ class Simulator:
         return hbeta.reshape(-1, n_features)
 
     @staticmethod
-    def calc_mean_se(
+    def calc_mean_var(
         hbeta: np.ndarray,
         target_key: str,
         target_values: list,
         n_features: int,
         **kwargs,
     ) -> pd.DataFrame:
-        """シミュレーションでの回帰係数の平均値と標準偏差を計算する"""
+        """シミュレーションでの回帰係数の平均と分散を計算する"""
 
         df = pd.DataFrame({target_key: target_values})
-        df[[f"Mean{j}" for j in range(n_features)]] = hbeta.mean(axis=1)
-        df[[f"SD{j}" for j in range(n_features)]] = hbeta.std(axis=1)
+        df[[f"平均{j}" for j in range(n_features)]] = hbeta.mean(axis=1)
+        df[[f"分散{j}" for j in range(n_features)]] = hbeta.var(axis=1)
 
         return df
 
@@ -94,7 +94,7 @@ class Simulator:
             X, y = self.generate_simulation_data(**params)
             hbeta[i, :, :] = self.estimate(X, y, l2_lambda, **params)
 
-        return self.calc_mean_se(hbeta, target_key, target_values, **params)
+        return self.calc_mean_var(hbeta, target_key, target_values, **params)
 
     def plot(self, df: pd.DataFrame, target_key: str, kind: str) -> None:
         """シミュレーション結果を可視化"""
@@ -109,4 +109,5 @@ class Simulator:
         
         fig.savefig(f"output/{target_key}と回帰係数の{kind}の関係")
         fig.show()
+        
         
